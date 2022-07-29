@@ -10,3 +10,6 @@ Install pyqt5 for the GUI library
 
 ## Run clients
 `python client.py`
+
+### To test the GUI without running the client and server run
+`python view.py`
