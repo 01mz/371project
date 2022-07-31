@@ -1,6 +1,7 @@
 # PyQt5 GUI based on https://realpython.com/python-pyqt-gui-calculator
 
 import sys
+import time
 
 from PyQt5.QtWidgets import QApplication
 from PyQt5.QtWidgets import QMainWindow
@@ -20,6 +21,13 @@ gridBtnStyle = '''
     }
 '''
 gridBtnStyleClicked = '''
+    QPushButton {
+        background-color : white;
+        border: 1px solid yellow;
+    }
+'''
+
+gridBtnStyleClaimed = '''
     QPushButton {
         background-color : yellow;
         border: 1px solid black;
@@ -45,6 +53,8 @@ class GUI(QMainWindow):
         # Create the display and the grid of buttons
         self._createDisplay()
         self._createButtons()
+        self.start = 0
+        self.end = 0
 
     def _createDisplay(self):
         """Create the display"""
@@ -85,12 +95,20 @@ class GUI(QMainWindow):
 
 
     def onButtonPressed(self, btn: QPushButton, row: int, col: int):
-        self.setDisplayText(f'{row},{col} pressed')
+        self.start = time.time()
+        self.setDisplayText(f'Tile {row},{col} \t PRESSED')
         btn.setStyleSheet(gridBtnStyleClicked)
 
     def onButtonReleased(self, btn: QPushButton, row: int, col: int):
-        self.setDisplayText(f'{row},{col} released')
-
+        self.end = time.time()
+        time_pressed = round(self.end - self.start, 1)
+        if time_pressed < 3:
+            self.setDisplayText(f'Tile {row},{col} \t NOT CLAIMED \t {time_pressed}s')
+            btn.setStyleSheet(gridBtnStyle)
+        else:
+            self.setDisplayText(f'Tile {row},{col} \t CLAIMED {time_pressed}s')
+            btn.setStyleSheet(gridBtnStyleClaimed)
+            btn.setDisabled(True)
 
     def setDisplayText(self, text):
         self.display.setText(text)
