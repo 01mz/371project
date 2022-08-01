@@ -1,6 +1,4 @@
-from socket import gethostname
-
-SERVER_HOST = gethostname()
+SERVER_HOST = ''
 SERVER_PORT = 65432
 BOARD_SIZE = 8
 
