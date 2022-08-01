@@ -1,4 +1,5 @@
 import sys
+import time
 from socket import socket
 from threading import Thread
 from typing import List, Optional
@@ -76,6 +77,7 @@ class GUI(QMainWindow):
         self.generalLayout.addLayout(buttonsLayout)
 
     def onButtonPressed(self, btn: QPushButton, row: int, col: int):
+        self.start = time.time()
         self.setDisplayText(f"{row},{col} pressed")
         if self.player is None:
             btn.setStyleSheet("background-color: yellow")
@@ -84,7 +86,15 @@ class GUI(QMainWindow):
         self.player.send(command.encode("ascii"))
 
     def onButtonReleased(self, btn: QPushButton, row: int, col: int):
-        self.setDisplayText(f"{row},{col} released")
+        self.end = time.time()
+        if self.end - self.start >= 3:
+            self.setDisplayText(f"{row},{col} claimed")
+            command = f"{Action.CLAIM} {row} {col}"
+        else:
+            self.setDisplayText(f"{row},{col} released")
+            command = f"{Action.RELEASE} {row} {col}"
+        print(f"COMMAND IS {command}")
+        self.player.send(command.encode("ascii"))
 
     def setDisplayText(self, text):
         self.display.setText(text)
@@ -101,6 +111,11 @@ class GUI(QMainWindow):
                     row, col, playerId = [int(v) for v in rest]
                     button = self.buttonGrid[row][col]
                     button.setStyleSheet(f"background-color: {getColor(playerId)}")
+                    button.setDisabled(True)
+                elif action == Action.CHOOSE:
+                    row, col, playerId = [int(v) for v in rest]
+                    button = self.buttonGrid[row][col]
+                    button.setStyleSheet(f"border: 1px solid {getColor(playerId)}")
             except:
                 print("Error!")
                 self.player.close()
