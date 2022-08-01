@@ -36,7 +36,6 @@ class GUI(QMainWindow):
         super().__init__()
         # Set main window properties
         self.setWindowTitle('Deny and Conquer')
-        self.setFixedSize(500, 600)
         # Set the central widget and general layout
         self.generalLayout = QVBoxLayout()
         self._centralWidget = QWidget(self)
@@ -51,7 +50,6 @@ class GUI(QMainWindow):
         # Create the display widget
         self.display = QLabel(text="none clicked yet")
         # Set display properties
-        self.display.setFixedHeight(35)
         self.display.setAlignment(Qt.AlignRight)
         # Add the display to the general layout
         self.generalLayout.addWidget(self.display)
@@ -60,8 +58,7 @@ class GUI(QMainWindow):
         """Create the buttons"""
 
         buttonsLayout = QGridLayout()
-        buttonsLayout.setSpacing(0)
-        buttonsLayout.setHorizontalSpacing(0)
+        buttonsLayout.setSpacing(10)
 
         # Create buttons and add them to the grid layout
         for row in range(nrows):
