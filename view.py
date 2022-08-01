@@ -1,37 +1,24 @@
 import sys
 from socket import socket
 from threading import Thread
-from typing import Optional
+from typing import List, Optional
 
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, QRunnable
 from PyQt5.QtWidgets import (QApplication, QGridLayout, QLabel, QMainWindow,
                              QPushButton, QVBoxLayout, QWidget)
 
 from constant import BOARD_SIZE, Action, getColor
 
-gridBtnStyle = """
+style = """
     QPushButton {
+        border: 1px solid black;
         background-color : white;
-        border: 1px solid black;
     }
 """
-gridBtnStyleClicked = """
-    QPushButton {
-        background-color : yellow;
-        border: 1px solid black;
-    }
-"""
-
-
-def getGridBtnStyle(color: str):
-    return "QPushButton { background-color: " + color + "; border: 1px solid black; }"
-
 
 # PyQt5 GUI based on https://realpython.com/python-pyqt-gui-calculator
 class GUI(QMainWindow):
     """Create a subclass of QMainWindow to setup the GUI"""
-
-    buttonGrid = []
 
     def __init__(self, player: Optional[socket] = None):
         """View initializer"""
@@ -46,6 +33,7 @@ class GUI(QMainWindow):
         # Create the display and the grid of buttons
         self._createDisplay()
         self._createButtons()
+        self.setStyleSheet(style)
         self.player = player
 
     def _createDisplay(self):
@@ -59,7 +47,7 @@ class GUI(QMainWindow):
 
     def _createButtons(self):
         """Create the buttons"""
-
+        self.buttonGrid: List[List[QPushButton]] = []
         buttonsLayout = QGridLayout()
         buttonsLayout.setSpacing(5)
 
@@ -69,7 +57,6 @@ class GUI(QMainWindow):
             for col in range(BOARD_SIZE):
                 btn = QPushButton(text=f"{row},{col}")
                 btn.setFixedSize(60, 60)
-                btn.setStyleSheet(gridBtnStyle)
                 buttonsLayout.addWidget(btn, row, col)
                 buttonRow.append(btn)
 
@@ -88,7 +75,7 @@ class GUI(QMainWindow):
     def onButtonPressed(self, btn: QPushButton, row: int, col: int):
         self.setDisplayText(f"{row},{col} pressed")
         if self.player is None:
-            btn.setStyleSheet(gridBtnStyleClicked)
+            btn.setStyleSheet("background-color: yellow")
             return
         command = f"{Action.CHOOSE} {row} {col}"
         self.player.send(command.encode("ascii"))
@@ -109,9 +96,8 @@ class GUI(QMainWindow):
                 action, *rest = command.split(" ")
                 if action == Action.CLAIM:
                     row, col, playerId = [int(v) for v in rest]
-                    self.buttonGrid[int(row)][int(col)].setStyleSheet(
-                        getGridBtnStyle(getColor(playerId))
-                    )
+                    button = self.buttonGrid[row][col]
+                    button.setStyleSheet(f"background-color: {getColor(playerId)}")
             except:
                 print("Error!")
                 self.player.close()
@@ -140,7 +126,7 @@ def runWithPlayer(player: socket):
 
     # New thread to listen to server
     # and update the UI
-    thread = Thread(target=view.onReceive)
+    thread = Thread(target=view.onReceive, name="ui")
     thread.start()
 
     # Execute the app's main loop
