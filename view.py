@@ -87,13 +87,13 @@ class GUI(QMainWindow):
 
     def onButtonReleased(self, btn: QPushButton, row: int, col: int):
         self.end = time.time()
-        if self.end - self.start >= 3:
+        elapsed_time = round(self.end - self.start, 1)
+        if elapsed_time >= 3:
             self.setDisplayText(f"{row},{col} claimed")
             command = f"{Action.CLAIM} {row} {col}"
         else:
             self.setDisplayText(f"{row},{col} released")
             command = f"{Action.RELEASE} {row} {col}"
-        print(f"COMMAND IS {command}")
         self.player.send(command.encode("ascii"))
 
     def setDisplayText(self, text):
@@ -115,7 +115,11 @@ class GUI(QMainWindow):
                 elif action == Action.CHOOSE:
                     row, col, playerId = [int(v) for v in rest]
                     button = self.buttonGrid[row][col]
-                    button.setStyleSheet(f"border: 1px solid {getColor(playerId)}")
+                    button.setStyleSheet(f"border: 5px solid {getColor(playerId)}")
+                elif action == Action.RELEASE:
+                    row, col, playerId = [int(v) for v in rest]
+                    button = self.buttonGrid[row][col]
+                    button.setStyleSheet(style)
             except:
                 print("Error!")
                 self.player.close()
