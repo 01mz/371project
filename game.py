@@ -43,6 +43,7 @@ class Game:
     def handleAction(self, player: Player, action: str, row: int, col: int):
         box = self.boxes[row][col]
         if action == Action.CHOOSE:
+            box.claimBy(player)
             command = f"{Action.CHOOSE} {row} {col} {player[1]}"
             self.broadcast(command)
         elif action == Action.CLAIM:
