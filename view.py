@@ -3,7 +3,7 @@ from socket import socket
 from threading import Thread
 from typing import List, Optional
 
-from PyQt5.QtCore import Qt, QRunnable
+from PyQt5.QtCore import Qt, QRunnable, pyqtSlot, QThreadPool
 from PyQt5.QtWidgets import (QApplication, QGridLayout, QLabel, QMainWindow,
                              QPushButton, QVBoxLayout, QWidget)
 
@@ -17,6 +17,7 @@ style = """
 """
 
 # PyQt5 GUI based on https://realpython.com/python-pyqt-gui-calculator
+# Multithreading on PyQt5 on https://www.pythonguis.com/tutorials/multithreading-pyqt-applications-qthreadpool/
 class GUI(QMainWindow):
     """Create a subclass of QMainWindow to setup the GUI"""
 
@@ -34,7 +35,9 @@ class GUI(QMainWindow):
         self._createDisplay()
         self._createButtons()
         self.setStyleSheet(style)
+        # Threading
         self.player = player
+        self.threadPool = QThreadPool()
 
     def _createDisplay(self):
         """Create the display"""
@@ -102,36 +105,30 @@ class GUI(QMainWindow):
                 print("Error!")
                 self.player.close()
                 break
+    
+    def show(self) -> None:
+        super().show()
+        if self.player:
+            uiWorker = UIWorker(self)
+            self.threadPool.start(uiWorker)
 
+class UIWorker(QRunnable):
+    def __init__(self, gui: GUI):
+        super(UIWorker, self).__init__()
+        self.gui = gui
 
-def runWithoutPlayer():
+    @pyqtSlot()
+    def run(self):
+        return self.gui.onReceive()
+
+def run(player: Optional[socket] = None):
     # Create an instance of QApplication
     app = QApplication(sys.argv)
-
-    # Show the GUI
-    view = GUI()
-    view.show()
-
-    # Execute the app's main loop
-    sys.exit(app.exec_())
-
-
-def runWithPlayer(player: socket):
-    # Create an instance of QApplication
-    app = QApplication(sys.argv)
-
     # Show the GUI
     view = GUI(player)
     view.show()
-
-    # New thread to listen to server
-    # and update the UI
-    thread = Thread(target=view.onReceive, name="ui")
-    thread.start()
-
     # Execute the app's main loop
     sys.exit(app.exec_())
 
-
 if __name__ == "__main__":
-    runWithoutPlayer()
+    run()
