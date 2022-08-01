@@ -44,6 +44,9 @@ class Game:
         box = self.boxes[row][col]
         if action == Action.CHOOSE:
             box.claimBy(player)
+            command = f"{Action.CHOOSE} {row} {col} {player[1]}"
+            self.broadcast(command)
+        elif action == Action.CLAIM:
             command = f"{Action.CLAIM} {row} {col} {player[1]}"
             self.broadcast(command)
 
