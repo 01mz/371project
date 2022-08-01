@@ -3,7 +3,7 @@ from socket import socket
 from threading import Thread
 from typing import List, Optional
 
-from PyQt5.QtCore import Qt, QRunnable, pyqtSlot, QThreadPool
+from PyQt5.QtCore import QRunnable, Qt, QThreadPool, pyqtSlot
 from PyQt5.QtWidgets import (QApplication, QGridLayout, QLabel, QMainWindow,
                              QPushButton, QVBoxLayout, QWidget)
 
@@ -112,6 +112,7 @@ class GUI(QMainWindow):
             uiWorker = UIWorker(self)
             self.threadPool.start(uiWorker)
 
+# A worker for updating the UI upon incoming commands from server
 class UIWorker(QRunnable):
     def __init__(self, gui: GUI):
         super(UIWorker, self).__init__()
