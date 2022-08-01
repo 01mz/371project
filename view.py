@@ -4,15 +4,8 @@ from threading import Thread
 from typing import Optional
 
 from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import (
-    QApplication,
-    QGridLayout,
-    QLabel,
-    QMainWindow,
-    QPushButton,
-    QVBoxLayout,
-    QWidget,
-)
+from PyQt5.QtWidgets import (QApplication, QGridLayout, QLabel, QMainWindow,
+                             QPushButton, QVBoxLayout, QWidget)
 
 from constant import BOARD_SIZE, Action, getColor
 

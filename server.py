@@ -28,6 +28,7 @@ def main():
     server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     server.bind((SERVER_HOST, SERVER_PORT))
     server.listen(4)
+    print(f"Server is running on port {SERVER_PORT}")
 
     with ThreadPoolExecutor() as executor:
         while game.isPlaying():
