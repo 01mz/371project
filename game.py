@@ -10,11 +10,25 @@ Player = Tuple[socket, int]
 class Box:
     def __init__(self):
         self.claim: Optional[Player] = None
+        self.hold: Optional[Player] = None
         self.lock = Lock()
 
-    def claimBy(self, player: Player):
+    def canBeClaim(self, player: Player):
         with self.lock:
+            if self.hold != player: return False
             self.claim = player
+            self.hold = None
+            return True
+
+    def canBeHeld(self, player: Player):
+        with self.lock:
+            if self.hold is not None: return False
+            self.hold = player
+            return True
+
+    def release(self):
+        with self.lock:
+            self.hold = None
 
 
 class Game:
@@ -43,16 +57,14 @@ class Game:
     def handleAction(self, player: Player, action: str, row: int, col: int):
         box = self.boxes[row][col]
         if action == Action.CHOOSE:
-            box.claimBy(player)
-            command = f"{Action.CHOOSE} {row} {col} {player[1]}"
-            self.broadcast(command)
+            if box.canBeHeld(player):
+                self.broadcast(f"{Action.CHOOSE} {row} {col} {player[1]}")
         elif action == Action.CLAIM:
-            box.claimBy(player)
-            command = f"{Action.CLAIM} {row} {col} {player[1]}"
-            self.broadcast(command)
+            if box.canBeClaim(player):
+                self.broadcast(f"{Action.CLAIM} {row} {col} {player[1]}")
         elif action == Action.RELEASE:
-            command = f"{Action.RELEASE} {row} {col} {player[1]}"
-            self.broadcast(command)
+            box.release()
+            self.broadcast(f"{Action.RELEASE} {row} {col} {player[1]}")
 
     def broadcast(self, message: str):
         for player in self.players:
