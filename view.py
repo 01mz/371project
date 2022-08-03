@@ -8,7 +8,7 @@ from PyQt5.QtWidgets import (QApplication, QGridLayout, QLabel, QMainWindow,
 
 from constant import BOARD_SIZE, Action, getColor
 
-# Global style for all button
+# Global style for all buttons
 style = """
     QPushButton {
         border: 1px solid black;
@@ -107,7 +107,7 @@ class GUI(QMainWindow):
         elif action == Action.CHOOSE:
             button.setStyleSheet(f"border: 5px solid {getColor(playerId)}")
         elif action == Action.RELEASE:
-            button.setStyleSheet("")
+            button.setStyleSheet("") # Revert to the global style
 
 # A thread for listening the incoming command from the server 
 # and emitting events to the main thread to update the UI
@@ -122,11 +122,12 @@ class UIThread(QThread):
         while True:
             try:
                 command = self.client.recv(1024).decode("ascii")
+                print(command)
                 tokens = command.split(" ")
                 if (len(tokens) != 4):
                     print("Invalid command")
                     continue
-                action, *rest = command.split(" ")
+                action, *rest = tokens
                 row, col, playerId = [int(v) for v in rest]
                 self.signaler.emit(action, row, col, playerId)
             except Exception as e:
