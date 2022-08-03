@@ -8,8 +8,11 @@ Install pyqt5 for the GUI library
 ## Run server
 `python server.py`
 
-## Run clients
+## Run a client without specifying server host (defaults to localhost)
 `python client.py`
+
+## Run a client with specific server host
+`python client.py 127.0.0.1`
 
 ### To test the GUI without running the client and server run
 `python view.py`
