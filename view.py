@@ -4,7 +4,7 @@ from socket import socket
 from threading import Thread
 from typing import List, Optional
 
-from PyQt5.QtCore import QRunnable, Qt, QThreadPool, pyqtSlot
+from PyQt5.QtCore import QRunnable, Qt, QThreadPool, pyqtSlot, QThread, pyqtSignal
 from PyQt5.QtWidgets import (QApplication, QGridLayout, QLabel, QMainWindow,
                              QPushButton, QVBoxLayout, QWidget)
 
@@ -38,7 +38,9 @@ class GUI(QMainWindow):
         self.setStyleSheet(style)
         # Threading
         self.player = player
-        self.threadPool = QThreadPool()
+        self.uiThread = UIThread(player)
+        self.uiThread.signaler.connect(self.handleAction)
+
 
     def _createDisplay(self):
         """Create the display"""
@@ -99,37 +101,36 @@ class GUI(QMainWindow):
     def setDisplayText(self, text):
         self.display.setText(text)
 
-    # Receive commands from the server
-    # and update the UI accordingly
-    def onReceive(self):
-        while self.player:
+    def handleAction(self, action: str, row: int, col: int, playerId: int):
+        button = self.buttonGrid[row][col]
+        if action == Action.CLAIM:
+            button.setStyleSheet(f"background-color: {getColor(playerId)}")
+        elif action == Action.CHOOSE:
+            button.setStyleSheet(f"border: 5px solid {getColor(playerId)}")
+        elif action == Action.RELEASE:
+            button.setStyleSheet("")
+
+# A thread for listening the incoming command from the server 
+# and emitting events to the main thread to update the UI
+class UIThread(QThread):
+    signaler = pyqtSignal(str, int, int, int)
+
+    def __init__(self, client: socket):
+        super().__init__()
+        self.client = client
+
+    def run(self):
+        while True:
             try:
-                command = self.player.recv(1024).decode("ascii")
+                command = self.client.recv(1024).decode("ascii")
                 print(command)
                 action, *rest = command.split(" ")
-                if action == Action.CLAIM:
-                    row, col, playerId = [int(v) for v in rest]
-                    button = self.buttonGrid[row][col]
-                    button.setStyleSheet(f"background-color: {getColor(playerId)}")
-                    button.setDisabled(True)
-                elif action == Action.CHOOSE:
-                    row, col, playerId = [int(v) for v in rest]
-                    button = self.buttonGrid[row][col]
-                    button.setStyleSheet(f"border: 5px solid {getColor(playerId)}")
-                elif action == Action.RELEASE:
-                    row, col, playerId = [int(v) for v in rest]
-                    button = self.buttonGrid[row][col]
-                    button.setStyleSheet(style)
+                row, col, playerId = [int(v) for v in rest]
+                self.signaler.emit(action, row, col, playerId)
             except:
                 print("Error!")
-                self.player.close()
+                self.client.close()
                 break
-    
-    def show(self) -> None:
-        super().show()
-        if self.player:
-            uiWorker = UIWorker(self)
-            self.threadPool.start(uiWorker)
 
 # A worker for updating the UI upon incoming commands from server
 class UIWorker(QRunnable):
@@ -147,6 +148,10 @@ def run(player: Optional[socket] = None):
     # Show the GUI
     view = GUI(player)
     view.show()
+
+    # Start the UI thread
+    if player is not None: 
+        view.uiThread.start()
     # Execute the app's main loop
     sys.exit(app.exec_())
 
