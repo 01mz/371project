@@ -1,15 +1,14 @@
 import sys
-import time
 from socket import socket
-from threading import Thread
-from typing import List, Optional
+from typing import List
 
-from PyQt5.QtCore import QRunnable, Qt, QThreadPool, pyqtSlot, QThread, pyqtSignal
+from PyQt5.QtCore import QRunnable, Qt, QTimer, pyqtSlot, QThread, pyqtSignal
 from PyQt5.QtWidgets import (QApplication, QGridLayout, QLabel, QMainWindow,
                              QPushButton, QVBoxLayout, QWidget)
 
 from constant import BOARD_SIZE, Action, getColor
 
+# Global style for all button
 style = """
     QPushButton {
         border: 1px solid black;
@@ -18,11 +17,10 @@ style = """
 """
 
 # PyQt5 GUI based on https://realpython.com/python-pyqt-gui-calculator
-# Multithreading on PyQt5 on https://www.pythonguis.com/tutorials/multithreading-pyqt-applications-qthreadpool/
 class GUI(QMainWindow):
     """Create a subclass of QMainWindow to setup the GUI"""
 
-    def __init__(self, player: Optional[socket] = None):
+    def __init__(self, player: socket = None):
         """View initializer"""
         super().__init__()
         # Set main window properties
@@ -36,11 +34,13 @@ class GUI(QMainWindow):
         self._createDisplay()
         self._createButtons()
         self.setStyleSheet(style)
-        # Threading
+        # UI Thread
         self.player = player
         self.uiThread = UIThread(player)
         self.uiThread.signaler.connect(self.handleAction)
-
+        
+        # Timer thread
+        self.timer: QTimer()
 
     def _createDisplay(self):
         """Create the display"""
@@ -78,25 +78,24 @@ class GUI(QMainWindow):
         # Add buttonsLayout to the general layout
         self.generalLayout.addLayout(buttonsLayout)
 
-    def onButtonPressed(self, btn: QPushButton, row: int, col: int):
-        self.start = time.time()
+    def onButtonPressed(self, _: QPushButton, row: int, col: int):
         self.setDisplayText(f"{row},{col} pressed")
-        if self.player is None:
-            btn.setStyleSheet("background-color: yellow")
-            return
         command = f"{Action.CHOOSE} {row} {col}"
         self.player.send(command.encode("ascii"))
 
-    def onButtonReleased(self, btn: QPushButton, row: int, col: int):
-        self.end = time.time()
-        elapsed_time = round(self.end - self.start, 1)
-        if elapsed_time >= 3:
-            self.setDisplayText(f"{row},{col} claimed")
-            command = f"{Action.CLAIM} {row} {col}"
-        else:
-            self.setDisplayText(f"{row},{col} released")
-            command = f"{Action.RELEASE} {row} {col}"
-        self.player.send(command.encode("ascii"))
+        # Start the timer
+        self.timer = QTimer()
+        self.timer.setSingleShot(True)
+        def callback():
+            self.player.send(f"{Action.CLAIM} {row} {col}".encode("ascii"))
+        self.timer.timeout.connect(callback)
+        self.timer.start(3000)
+
+    def onButtonReleased(self, _: QPushButton, row: int, col: int):
+        remaining = self.timer.remainingTime()
+        self.timer.stop()
+        if remaining > 0:
+            self.player.send(f"{Action.RELEASE} {row} {col}".encode("ascii"))
 
     def setDisplayText(self, text):
         self.display.setText(text)
@@ -123,12 +122,15 @@ class UIThread(QThread):
         while True:
             try:
                 command = self.client.recv(1024).decode("ascii")
-                print(command)
+                tokens = command.split(" ")
+                if (len(tokens) != 4):
+                    print("Invalid command")
+                    continue
                 action, *rest = command.split(" ")
                 row, col, playerId = [int(v) for v in rest]
                 self.signaler.emit(action, row, col, playerId)
-            except:
-                print("Error!")
+            except Exception as e:
+                print(f"Error!: {e}")
                 self.client.close()
                 break
 
@@ -142,7 +144,7 @@ class UIWorker(QRunnable):
     def run(self):
         return self.gui.onReceive()
 
-def run(player: Optional[socket] = None):
+def run(player: socket):
     # Create an instance of QApplication
     app = QApplication(sys.argv)
     # Show the GUI
@@ -154,6 +156,3 @@ def run(player: Optional[socket] = None):
         view.uiThread.start()
     # Execute the app's main loop
     sys.exit(app.exec_())
-
-if __name__ == "__main__":
-    run()
