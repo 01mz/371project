@@ -49,8 +49,7 @@ class Game:
         self.players.remove(player)
 
     def isPlaying(self):
-        with self.lock:
-            return self.new or len(self.players) > 0
+        return self.new or len(self.players) > 0
 
     def handleAction(self, player: Player, action: str, row: int, col: int):
         with self.lock:
