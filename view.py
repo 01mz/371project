@@ -2,7 +2,7 @@ import sys
 from socket import socket
 from typing import List
 
-from PyQt5.QtCore import QRunnable, Qt, QTimer, pyqtSlot, QThread, pyqtSignal
+from PyQt5.QtCore import QRunnable, Qt, QThread, QTimer, pyqtSignal, pyqtSlot
 from PyQt5.QtWidgets import (QApplication, QGridLayout, QLabel, QMainWindow,
                              QPushButton, QVBoxLayout, QWidget)
 
@@ -135,15 +135,6 @@ class UIThread(QThread):
                 self.client.close()
                 break
 
-# A worker for updating the UI upon incoming commands from server
-class UIWorker(QRunnable):
-    def __init__(self, gui: GUI):
-        super(UIWorker, self).__init__()
-        self.gui = gui
-
-    @pyqtSlot()
-    def run(self):
-        return self.gui.onReceive()
 
 def run(player: socket):
     # Create an instance of QApplication
