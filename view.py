@@ -1,10 +1,18 @@
 import sys
 from socket import socket
+from tkinter import Button
 from typing import List
 
-from PyQt5.QtCore import QRunnable, Qt, QThread, QTimer, pyqtSignal, pyqtSlot
-from PyQt5.QtWidgets import (QApplication, QGridLayout, QLabel, QMainWindow,
-                             QPushButton, QVBoxLayout, QWidget)
+from PyQt5.QtCore import Qt, QThread, QTimer, pyqtSignal
+from PyQt5.QtWidgets import (
+    QApplication,
+    QGridLayout,
+    QLabel,
+    QMainWindow,
+    QPushButton,
+    QVBoxLayout,
+    QWidget,
+)
 
 from constant import BOARD_SIZE, Action, getColor
 
@@ -15,6 +23,27 @@ style = """
         background-color : white;
     }
 """
+
+
+class StyledButton:
+    def __init__(self, button: QPushButton):
+        self.button = button
+        self.border = -1
+        self.background = -1
+
+    def setBorder(self, border: int):
+        self.border = border
+
+    def setBackground(self, background: int):
+        self.background = background
+
+    def applyStyle(self):
+        borderStyle = "" if self.border < 0 else f"border: 5px solid {getColor(self.border)};"
+        self.button.setStyleSheet(
+            f"{borderStyle}"
+            f"background-color: {getColor(self.background)};"
+        )
+
 
 # PyQt5 GUI based on https://realpython.com/python-pyqt-gui-calculator
 class GUI(QMainWindow):
@@ -38,7 +67,7 @@ class GUI(QMainWindow):
         self.player = player
         self.uiThread = UIThread(player)
         self.uiThread.signaler.connect(self.handleAction)
-        
+
         # Timer thread
         self.timer: QTimer()
 
@@ -53,7 +82,7 @@ class GUI(QMainWindow):
 
     def _createButtons(self):
         """Create the buttons"""
-        self.buttonGrid: List[List[QPushButton]] = []
+        self.buttonGrid: List[List[StyledButton]] = []
         buttonsLayout = QGridLayout()
         buttonsLayout.setSpacing(5)
 
@@ -64,7 +93,7 @@ class GUI(QMainWindow):
                 btn = QPushButton(text=f"{row},{col}")
                 btn.setFixedSize(60, 60)
                 buttonsLayout.addWidget(btn, row, col)
-                buttonRow.append(btn)
+                buttonRow.append(StyledButton(btn))
 
                 # Setup pressed (mouseDown) and released (mouseUp) events
                 # Note: setupMouseEvents creates a closure on btn, row, col (so that b, r, c are local vars)
@@ -86,8 +115,10 @@ class GUI(QMainWindow):
         # Start the timer
         self.timer = QTimer()
         self.timer.setSingleShot(True)
+
         def callback():
             self.player.send(f"{Action.CLAIM} {row} {col}".encode("ascii"))
+
         self.timer.timeout.connect(callback)
         self.timer.start(3000)
 
@@ -103,13 +134,16 @@ class GUI(QMainWindow):
     def handleAction(self, action: str, row: int, col: int, playerId: int):
         button = self.buttonGrid[row][col]
         if action == Action.CLAIM:
-            button.setStyleSheet(f"background-color: {getColor(playerId)}")
+            button.setBorder(-1)
+            button.setBackground(playerId)
         elif action == Action.CHOOSE:
-            button.setStyleSheet(f"border: 5px solid {getColor(playerId)}")
+            button.setBorder(playerId)
         elif action == Action.RELEASE:
-            button.setStyleSheet("") # Revert to the global style
+            button.setBorder(-1)
+        button.applyStyle()
 
-# A thread for listening the incoming command from the server 
+
+# A thread for listening the incoming command from the server
 # and emitting events to the main thread to update the UI
 class UIThread(QThread):
     signaler = pyqtSignal(str, int, int, int)
@@ -124,7 +158,7 @@ class UIThread(QThread):
                 command = self.client.recv(1024).decode("ascii")
                 print(command)
                 tokens = command.split(" ")
-                if (len(tokens) != 4):
+                if len(tokens) != 4:
                     print("Invalid command")
                     continue
                 action, *rest = tokens
@@ -144,7 +178,7 @@ def run(player: socket):
     view.show()
 
     # Start the UI thread
-    if player is not None: 
+    if player is not None:
         view.uiThread.start()
     # Execute the app's main loop
     sys.exit(app.exec_())
