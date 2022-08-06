@@ -20,10 +20,9 @@ class Box:
         self.hold = None
         return True
 
-    # Player can hold a box if it is on hold
-    # or already claimed by themself
+    # Player can hold a box if it is not on hold or being claimed
     def canBeHeld(self, player: Player):
-        if self.hold is not None or self.claim == player:
+        if self.hold is not None or self.claim is not None:
             return False
         self.hold = player
         return True
