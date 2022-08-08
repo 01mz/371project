@@ -28,8 +28,11 @@ class Box:
         return True
 
     # Release the box from being on hold
-    def release(self):
+    def canBeReleased(self, player: Player):
+        if self.hold != player is None:
+            return False
         self.hold = None
+        return True
 
 
 class Game:
@@ -67,8 +70,7 @@ class Game:
                 self.broadcast(f"{Action.CHOOSE} {row} {col} {player[1]}")
             elif action == Action.CLAIM and box.canBeClaim(player):
                 self.broadcast(f"{Action.CLAIM} {row} {col} {player[1]}")
-            elif action == Action.RELEASE:
-                box.release()
+            elif action == Action.RELEASE and box.canBeReleased(player):
                 self.broadcast(f"{Action.RELEASE} {row} {col} {player[1]}")
 
     # Broadcast a command to all players
