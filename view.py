@@ -1,18 +1,10 @@
 import sys
 from socket import socket
-from tkinter import Button
 from typing import List
 
 from PyQt5.QtCore import Qt, QThread, QTimer, pyqtSignal
-from PyQt5.QtWidgets import (
-    QApplication,
-    QGridLayout,
-    QLabel,
-    QMainWindow,
-    QPushButton,
-    QVBoxLayout,
-    QWidget,
-)
+from PyQt5.QtWidgets import (QApplication, QGridLayout, QLabel, QMainWindow,
+                             QPushButton, QVBoxLayout, QWidget)
 
 from constant import BOARD_SIZE, Action, getColor
 
@@ -23,7 +15,6 @@ style = """
         background-color : white;
     }
 """
-
 
 class StyledButton:
     def __init__(self, button: QPushButton):
