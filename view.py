@@ -3,8 +3,15 @@ from socket import socket
 from typing import List
 
 from PyQt5.QtCore import Qt, QThread, QTimer, pyqtSignal
-from PyQt5.QtWidgets import (QApplication, QGridLayout, QLabel, QMainWindow,
-                             QPushButton, QVBoxLayout, QWidget)
+from PyQt5.QtWidgets import (
+    QApplication,
+    QGridLayout,
+    QLabel,
+    QMainWindow,
+    QPushButton,
+    QVBoxLayout,
+    QWidget,
+)
 
 from constant import BOARD_SIZE, Action, getColor
 
@@ -15,6 +22,7 @@ style = """
         background-color : white;
     }
 """
+
 
 class StyledButton:
     def __init__(self, button: QPushButton):
@@ -29,10 +37,11 @@ class StyledButton:
         self.background = background
 
     def applyStyle(self):
-        borderStyle = "" if self.border < 0 else f"border: 5px solid {getColor(self.border)};"
+        borderStyle = (
+            "" if self.border < 0 else f"border: 5px solid {getColor(self.border)};"
+        )
         self.button.setStyleSheet(
-            f"{borderStyle}"
-            f"background-color: {getColor(self.background)};"
+            f"{borderStyle}" f"background-color: {getColor(self.background)};"
         )
 
 
@@ -100,7 +109,7 @@ class GUI(QMainWindow):
 
     def onButtonPressed(self, _: QPushButton, row: int, col: int):
         self.setDisplayText(f"{row},{col} pressed")
-        command = f"{Action.CHOOSE} {row} {col}"
+        command = f"{Action.HOLD} {row} {col}"
         self.player.send(command.encode("ascii"))
 
         # Start the timer
@@ -127,7 +136,7 @@ class GUI(QMainWindow):
         if action == Action.CLAIM:
             button.setBorder(-1)
             button.setBackground(playerId)
-        elif action == Action.CHOOSE:
+        elif action == Action.HOLD:
             button.setBorder(playerId)
         elif action == Action.RELEASE:
             button.setBorder(-1)

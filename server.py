@@ -1,7 +1,7 @@
 import socket
 from concurrent.futures import ThreadPoolExecutor
 
-from constant import SERVER_HOST, SERVER_PORT
+from constant import CONNECTION, SERVER_HOST, SERVER_PORT
 from game import Game, Player
 
 game = Game()
@@ -9,19 +9,17 @@ game = Game()
 # Listen and handle the incoming commands from the player
 def handlePlayer(player: Player):
     while True:
-        client, _ = player
         try:
             # Handle game command from the client
-            command = client.recv(1024).decode("ascii")
+            command = player.socket.recv(1024).decode("ascii")
             action, row, col = command.split(" ")
             game.handleAction(player, action, int(row), int(col))
         except:
             # Removing player from the game
             game.removePlayer(player)
-            client.close()
-            print(f"Player {player[1]} is disconnected")
+            player.socket.close()
+            print(f"Player {player.id} is disconnected")
             break
-
 
 def main():
     # Set up the server
@@ -37,11 +35,20 @@ def main():
 
             # Add new player to the game
             player = game.addPlayer(client)
-            print(f"Player {player[1]} is connected")
 
-            # Create a thread to handle incoming commands for each player
-            # and add it to the thread pool
-            executor.submit(handlePlayer, player)
+            # Notify the player which ID they are playing
+            # or reject the player if the game is full
+            if player is not None:
+                client.send(f"{CONNECTION.ACCEPT} {player.id}".encode("ascii"))
+                
+                # Create a thread to handle incoming commands for each player
+                # and add it to the thread pool
+                executor.submit(handlePlayer, player)
+                print(f"Player {player.id} is connected")
+            else:
+                client.send(f"{CONNECTION.REJECT}".encode("ascii"))
+                client.close()
+                print(f"New player is rejected")
         server.close()
 
 

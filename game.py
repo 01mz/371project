@@ -2,9 +2,12 @@ from socket import socket
 from threading import Lock
 from typing import List, Optional, Tuple
 
-from constant import BOARD_SIZE, Action
+from constant import BOARD_SIZE, MAX_PLAYERS, Action
 
-Player = Tuple[socket, int]
+class Player:
+    def __init__(self, socket: socket, id: int):
+        self.socket = socket
+        self.id = id
 
 
 class Box:
@@ -38,9 +41,12 @@ class Box:
 class Game:
     def __init__(self):
         self.new = True
-        self.players = []
-        self.boxes: List[List[Box]] = []
+        self.players: List[Player] = []
         self.lock = Lock()
+        self._makeBoxes()
+
+    def _makeBoxes(self):
+        self.boxes: List[List[Box]] = []
         for _ in range(BOARD_SIZE):
             row: List[Box] = []
             for _ in range(BOARD_SIZE):
@@ -48,9 +54,12 @@ class Game:
             self.boxes.append(row)
 
     # Add a new player to the game
-    def addPlayer(self, client: socket) -> Player:
+    # Return None if the player cannot be added
+    def addPlayer(self, client: socket) -> Optional[Player]:
         self.new = False
-        player = (client, len(self.players))
+        if len(self.players) >= MAX_PLAYERS:
+            return None
+        player = Player(client, len(self.players))
         self.players.append(player)
         return player
 
@@ -66,15 +75,14 @@ class Game:
     def handleAction(self, player: Player, action: str, row: int, col: int):
         with self.lock:
             box = self.boxes[row][col]
-            if action == Action.CHOOSE and box.canBeHeld(player):
-                self.broadcast(f"{Action.CHOOSE} {row} {col} {player[1]}")
+            if action == Action.HOLD and box.canBeHeld(player):
+                self.broadcast(f"{Action.HOLD} {row} {col} {player.id}")
             elif action == Action.CLAIM and box.canBeClaim(player):
-                self.broadcast(f"{Action.CLAIM} {row} {col} {player[1]}")
+                self.broadcast(f"{Action.CLAIM} {row} {col} {player.id}")
             elif action == Action.RELEASE and box.canBeReleased(player):
-                self.broadcast(f"{Action.RELEASE} {row} {col} {player[1]}")
+                self.broadcast(f"{Action.RELEASE} {row} {col} {player.id}")
 
     # Broadcast a command to all players
     def broadcast(self, message: str):
         for player in self.players:
-            client, _ = player
-            client.send(message.encode("ascii"))
+            player.socket.send(message.encode("ascii"))
