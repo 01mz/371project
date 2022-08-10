@@ -39,9 +39,9 @@ class Box:
 
 class Game:
     def __init__(self):
-        self.playing = False
         self.players: List[Player] = []
         self.lock = Lock()
+        self.isPlaying = False
         self._makeBoxes()
 
     def _makeBoxes(self):
@@ -67,7 +67,7 @@ class Game:
     def handleAction(self, player: Player, action: str, row: int, col: int):
         with self.lock:
             # Reject the action if there are not enough players
-            if len(self.players) < MIN_PLAYERS or len(self.players) > MAX_PLAYERS:
+            if len(self.players) < MIN_PLAYERS or len(self.players) >= MAX_PLAYERS:
                 return
             self.isPlaying = True
             box = self.boxes[row][col]

@@ -19,7 +19,7 @@ def run(host, port):
     else:
         if command == Connection.REJECT:
             print("Sorry. Unable to join the game right now")
-        socket.close()
+        client.close()
     
 
 if __name__ == "__main__":
