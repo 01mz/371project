@@ -13,7 +13,8 @@ from PyQt5.QtWidgets import (
     QWidget,
 )
 
-from constant import BOARD_SIZE, Action, getColor
+from constant import BOARD_SIZE, Action, getColor, getLabel
+from game import Player
 
 # Global style for all buttons
 style = """
@@ -49,9 +50,12 @@ class StyledButton:
 class GUI(QMainWindow):
     """Create a subclass of QMainWindow to setup the GUI"""
 
-    def __init__(self, player: socket = None):
+    def __init__(self, player: Player):
         """View initializer"""
         super().__init__()
+        # Set up the player
+        self.player = player
+
         # Set main window properties
         self.setWindowTitle("Deny and Conquer")
         # Set the central widget and general layout
@@ -63,9 +67,9 @@ class GUI(QMainWindow):
         self._createDisplay()
         self._createButtons()
         self.setStyleSheet(style)
+
         # UI Thread
-        self.player = player
-        self.uiThread = UIThread(player)
+        self.uiThread = UIThread(player.socket)
         self.uiThread.signaler.connect(self.handleAction)
 
         # Timer thread
@@ -74,11 +78,11 @@ class GUI(QMainWindow):
     def _createDisplay(self):
         """Create the display"""
         # Create the display widget
-        self.display = QLabel(text="none clicked yet")
+        label = QLabel(text=f"You are playing {getLabel(self.player.id)}")
         # Set display properties
-        self.display.setAlignment(Qt.AlignRight)
+        label.setAlignment(Qt.AlignLeft)
         # Add the display to the general layout
-        self.generalLayout.addWidget(self.display)
+        self.generalLayout.addWidget(label)
 
     def _createButtons(self):
         """Create the buttons"""
@@ -90,7 +94,7 @@ class GUI(QMainWindow):
         for row in range(BOARD_SIZE):
             buttonRow = []
             for col in range(BOARD_SIZE):
-                btn = QPushButton(text=f"{row},{col}")
+                btn = QPushButton()
                 btn.setFixedSize(60, 60)
                 buttonsLayout.addWidget(btn, row, col)
                 buttonRow.append(StyledButton(btn))
@@ -108,16 +112,15 @@ class GUI(QMainWindow):
         self.generalLayout.addLayout(buttonsLayout)
 
     def onButtonPressed(self, _: QPushButton, row: int, col: int):
-        self.setDisplayText(f"{row},{col} pressed")
         command = f"{Action.HOLD} {row} {col}"
-        self.player.send(command.encode("ascii"))
+        self.player.socket.send(command.encode("ascii"))
 
         # Start the timer
         self.timer = QTimer()
         self.timer.setSingleShot(True)
 
         def callback():
-            self.player.send(f"{Action.CLAIM} {row} {col}".encode("ascii"))
+            self.player.socket.send(f"{Action.CLAIM} {row} {col}".encode("ascii"))
 
         self.timer.timeout.connect(callback)
         self.timer.start(3000)
@@ -126,10 +129,7 @@ class GUI(QMainWindow):
         remaining = self.timer.remainingTime()
         self.timer.stop()
         if remaining > 0:
-            self.player.send(f"{Action.RELEASE} {row} {col}".encode("ascii"))
-
-    def setDisplayText(self, text):
-        self.display.setText(text)
+            self.player.socket.send(f"{Action.RELEASE} {row} {col}".encode("ascii"))
 
     def handleAction(self, action: str, row: int, col: int, playerId: int):
         button = self.buttonGrid[row][col]
@@ -178,7 +178,7 @@ def run(player: socket):
     view.show()
 
     # Start the UI thread
-    if player is not None:
-        view.uiThread.start()
+    view.uiThread.start()
+
     # Execute the app's main loop
     sys.exit(app.exec_())

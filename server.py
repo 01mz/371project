@@ -1,7 +1,7 @@
 import socket
 from concurrent.futures import ThreadPoolExecutor
 
-from constant import CONNECTION, SERVER_HOST, SERVER_PORT
+from constant import MAX_PLAYERS, SERVER_HOST, SERVER_PORT, Connection
 from game import Game, Player
 
 game = Game()
@@ -29,27 +29,26 @@ def main():
     print(f"Server is running on port {SERVER_PORT}")
 
     with ThreadPoolExecutor() as executor:
-        while game.isPlaying():
+        while True:
             # Connect the client
             client, _ = server.accept()
 
-            # Add new player to the game
-            player = game.addPlayer(client)
+            # Reject player if the game is full of players or the game is playing
+            if len(game.players) >= MAX_PLAYERS or game.isPlaying:
+                client.send(Connection.REJECT.encode("ascii"))
+                client.close()
+                continue
 
             # Notify the player which ID they are playing
-            # or reject the player if the game is full
-            if player is not None:
-                client.send(f"{CONNECTION.ACCEPT} {player.id}".encode("ascii"))
+            else:
+                # Add new player to the game
+                player = game.addPlayer(client)
+                client.send(f"{Connection.ACCEPT} {player.id}".encode("ascii"))
                 
                 # Create a thread to handle incoming commands for each player
                 # and add it to the thread pool
                 executor.submit(handlePlayer, player)
                 print(f"Player {player.id} is connected")
-            else:
-                client.send(f"{CONNECTION.REJECT}".encode("ascii"))
-                client.close()
-                print(f"New player is rejected")
-        server.close()
 
 
 if __name__ == "__main__":

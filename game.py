@@ -1,8 +1,8 @@
 from socket import socket
 from threading import Lock
-from typing import List, Optional, Tuple
+from typing import List, Optional
 
-from constant import BOARD_SIZE, MAX_PLAYERS, Action
+from constant import BOARD_SIZE, MAX_PLAYERS, MIN_PLAYERS, Action
 
 class Player:
     def __init__(self, socket: socket, id: int):
@@ -37,10 +37,9 @@ class Box:
         self.hold = None
         return True
 
-
 class Game:
     def __init__(self):
-        self.new = True
+        self.playing = False
         self.players: List[Player] = []
         self.lock = Lock()
         self._makeBoxes()
@@ -55,10 +54,7 @@ class Game:
 
     # Add a new player to the game
     # Return None if the player cannot be added
-    def addPlayer(self, client: socket) -> Optional[Player]:
-        self.new = False
-        if len(self.players) >= MAX_PLAYERS:
-            return None
+    def addPlayer(self, client: socket):
         player = Player(client, len(self.players))
         self.players.append(player)
         return player
@@ -67,13 +63,13 @@ class Game:
     def removePlayer(self, player: Player):
         self.players.remove(player)
 
-    # Check if the game is over
-    def isPlaying(self):
-        return self.new or len(self.players) > 0
-
     # Handle a command from a player
     def handleAction(self, player: Player, action: str, row: int, col: int):
         with self.lock:
+            # Reject the action if there are not enough players
+            if len(self.players) < MIN_PLAYERS or len(self.players) > MAX_PLAYERS:
+                return
+            self.isPlaying = True
             box = self.boxes[row][col]
             if action == Action.HOLD and box.canBeHeld(player):
                 self.broadcast(f"{Action.HOLD} {row} {col} {player.id}")
