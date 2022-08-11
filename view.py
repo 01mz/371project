@@ -78,7 +78,7 @@ class GUI(QMainWindow):
     def _createDisplay(self):
         """Create the display"""
         # Create the display widget
-        label = QLabel(text=f"You are playing {getLabel(self.player.id)}")
+        label = QLabel(text=f"You are playing as {getLabel(self.player.id)}")
         # Set display properties
         label.setAlignment(Qt.AlignLeft)
         # Add the display to the general layout
