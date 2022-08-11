@@ -47,17 +47,22 @@ class Game:
             self.broadcast(command)
         elif action == Action.CLAIM:
             box.claimBy(player)
-            command = f"{Action.CLAIM} {row} {col} {player[1]}"
+            winner_index = self.checkWinners()
+            command = f"{Action.CLAIM} {row} {col} {player[1]} {winner_index}"
             self.broadcast(command)
         elif action == Action.RELEASE:
             command = f"{Action.RELEASE} {row} {col} {player[1]}"
             self.broadcast(command)
-        self.checkWinners()
 
     def broadcast(self, message: str):
         for player in self.players:
-            client, _ = player
-            client.send(message.encode("ascii"))
+            client, player_index = player
+            action, *_ = message.split(" ")
+            new_message = message + f" {player_index}"
+            if action == Action.CLAIM:
+                client.send(new_message.encode("ascii"))
+            else:
+                client.send(message.encode("ascii"))
 
     def checkWinners(self):
         #Get claimed boxes array
@@ -70,11 +75,13 @@ class Game:
         #Get the most repetitive number of claimed boxes
         c = Counter(claimed_list)
         highest_score = c.most_common(1) #return [(player index, # of boxes claim)]
-        
+
         #If every boxes are filled, we have a winner
         if(len(claimed_list) == BOARD_SIZE*BOARD_SIZE):
             winner = highest_score[0]
             winner_index = winner[0]
             winner_score = winner[1]
             print("Winner is player number", winner_index," with highest score: ", winner_score)
-            
+            return winner_index
+        else:
+            return -1

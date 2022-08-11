@@ -105,18 +105,21 @@ class GUI(QMainWindow):
         while self.player:
             try:
                 command = self.player.recv(1024).decode("ascii")
-                print(command)
                 action, *rest = command.split(" ")
                 if action == Action.CLAIM:
-                    row, col, playerId = [int(v) for v in rest]
+                    row, col, playerId, winner_index, player_index = [int(v) for v in rest]
                     button = self.buttonGrid[row][col]
                     button.setStyleSheet(f"background-color: {getColor(playerId)}")
                     button.setDisabled(True)
+                    if winner_index != -1 and winner_index == player_index:
+                        self.setDisplayText(f"You Win!")
+                    elif winner_index != -1 and winner_index != player_index:
+                        self.setDisplayText(f"You Lose!")
                 elif action == Action.CHOOSE:
                     row, col, playerId = [int(v) for v in rest]
                     button = self.buttonGrid[row][col]
                     button.setStyleSheet(f"border: 5px solid {getColor(playerId)}")
-                elif action == Action.RELEASE:
+                elif action == Action.RELEASE:         
                     row, col, playerId = [int(v) for v in rest]
                     button = self.buttonGrid[row][col]
                     button.setStyleSheet(style)
