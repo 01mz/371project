@@ -1,6 +1,3 @@
-from enum import Enum
-
-
 SERVER_HOST = 'localhost'
 SERVER_PORT = 65432
 BOARD_SIZE = 8
@@ -19,7 +16,7 @@ class Connection:
 
 COLORS = ["red", "green", "blue", "yellow"]
 LABELS = ["RED", "GREEN", "BLUE", "YELLOW"]
-    
+
 
 MIN_PLAYERS = 2
 MAX_PLAYERS = 4

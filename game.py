@@ -32,7 +32,7 @@ class Box:
 
     # Release the box from being on hold
     def canBeReleased(self, player: Player):
-        if self.hold != player is None:
+        if self.hold != player:
             return False
         self.hold = None
         return True
