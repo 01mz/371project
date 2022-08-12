@@ -4,10 +4,8 @@ from concurrent.futures import ThreadPoolExecutor
 from constant import MAX_PLAYERS, SERVER_HOST, SERVER_PORT, Connection
 from game import Game, Player
 
-game = Game()
-
 # Listen and handle the incoming commands from the player
-def handlePlayer(player: Player):
+def handlePlayer(game: Game, player: Player):
     while True:
         try:
             # Handle game command from the client
@@ -22,6 +20,8 @@ def handlePlayer(player: Player):
             break
 
 def main():
+    # Create a new game
+    game = Game()
     # Set up the server
     server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     server.bind((SERVER_HOST, SERVER_PORT))
@@ -32,6 +32,11 @@ def main():
         while True:
             # Connect the client
             client, _ = server.accept()
+
+            # If all players have disconnected and then a new player joins, reset the game for the new player
+            if len(game.players) == 0 and game.isPlaying:
+                print("creating a new game")
+                game = Game()
 
             # Reject player if the game is full of players or the game is playing
             if len(game.players) >= MAX_PLAYERS or game.isPlaying:
@@ -47,7 +52,7 @@ def main():
                 
                 # Create a thread to handle incoming commands for each player
                 # and add it to the thread pool
-                executor.submit(handlePlayer, player)
+                executor.submit(handlePlayer, game, player)
                 print(f"Player {player.id} is connected")
 
 
