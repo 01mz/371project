@@ -1,6 +1,4 @@
-import socket
-
-SERVER_HOST = socket.gethostbyname(socket.gethostname())
+SERVER_HOST = 'localhost'
 SERVER_PORT = 65432
 BOARD_SIZE = 8
 

@@ -74,11 +74,11 @@ class Game:
                 return
             self.isPlaying = True
             box = self.boxes[row][col]
-            if action == Action.CHOOSE and box.canBeHeld(player):
-                self.broadcast(f"{Action.CHOOSE} {row} {col} {player.id}")
+            if action == Action.HOLD and box.canBeHeld(player):
+                self.broadcast(f"{Action.HOLD} {row} {col} {player.id}")
             elif action == Action.CLAIM and box.canBeClaim(player):
                 winner_index = self.checkWinners()
-                self.broadcast(f"{Action.CLAIM} {row} {col} {player/id} {winner_index}")
+                self.broadcast(f"{Action.CLAIM} {row} {col} {player.id} {-1}")
                 if winner_index != -1: 
                     self.isGameFinished = True
             elif action == Action.RELEASE and box.canBeReleased(player):
@@ -94,12 +94,12 @@ class Game:
             else:
                 player.socket.send(message.encode("ascii"))
 
-def checkWinners(self):
+    def checkWinners(self):
         claimed_list = []         #Get claimed boxes array
         for row in range(BOARD_SIZE):
             for col in range(BOARD_SIZE):
                 if(self.boxes[row][col].claim is not None):
-                    claimed_list.append(self.boxes[row][col].claim[1]) #Get the 2nd value in the player tuple 
+                    claimed_list.append(self.boxes[row][col].claim.id)
 
         #Get the most repetitive number of claimed boxes
         c = Counter(claimed_list)
