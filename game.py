@@ -54,6 +54,7 @@ class Game:
             for _ in range(BOARD_SIZE):
                 row.append(Box())
             self.boxes.append(row)
+        
     # Add a new player to the game
     # Return None if the player cannot be added
     def addPlayer(self, client: socket):
@@ -74,10 +75,10 @@ class Game:
             self.isPlaying = True
             box = self.boxes[row][col]
             if action == Action.CHOOSE and box.canBeHeld(player):
-                self.broadcast(f"{Action.CHOOSE} {row} {col} {player[1]}")
+                self.broadcast(f"{Action.CHOOSE} {row} {col} {player.id}")
             elif action == Action.CLAIM and box.canBeClaim(player):
                 winner_index = self.checkWinners()
-                self.broadcast(f"{Action.CLAIM} {row} {col} {player[1]} {winner_index}")
+                self.broadcast(f"{Action.CLAIM} {row} {col} {player/id} {winner_index}")
                 if winner_index != -1: 
                     self.isGameFinished = True
             elif action == Action.RELEASE and box.canBeReleased(player):
@@ -86,13 +87,12 @@ class Game:
     # Broadcast a command to all players
     def broadcast(self, message: str):      
         for player in self.players:
-            client, player_index = player
             action, *_ = message.split(" ")
-            new_message = message + f" {player_index}"
+            new_message = message + f" {player.id}"
             if action == Action.CLAIM:
-                client.send(new_message.encode("ascii"))
+                player.socket.send(new_message.encode("ascii"))
             else:
-                client.send(message.encode("ascii"))
+                player.socket.send(message.encode("ascii"))
 
 def checkWinners(self):
         claimed_list = []         #Get claimed boxes array
