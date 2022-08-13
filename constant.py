@@ -1,4 +1,4 @@
-SERVER_HOST = 'localhost'
+SERVER_HOST = ''
 SERVER_PORT = 65432
 BOARD_SIZE = 8
 
