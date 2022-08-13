@@ -137,11 +137,7 @@ class GUI(QMainWindow):
             button.setBorder(-1)
             button.setBackground(playerId)
             if winnerIndex != -1 and winnerIndex == playerIndex:
-                label = QLabel(text=f"You Win!")
-                label.setAlignment(Qt.AlignCenter)
-                self.generalLayout.addWidget(label)
-            elif winnerIndex != -1 and winnerIndex != playerIndex:
-                label = QLabel(text="You Lose!")
+                label = QLabel(text=f"Game ended: {getColor(winnerIndex)} wins")
                 label.setAlignment(Qt.AlignCenter)
                 self.generalLayout.addWidget(label)
         elif action == Action.HOLD:
