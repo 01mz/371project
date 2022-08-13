@@ -137,9 +137,13 @@ class GUI(QMainWindow):
             button.setBorder(-1)
             button.setBackground(playerId)
             if winnerIndex != -1 and winnerIndex == playerIndex:
-                self.setDisplayText(f"You Win!")
+                label = QLabel(text=f"You Win!")
+                label.setAlignment(Qt.AlignCenter)
+                self.generalLayout.addWidget(label)
             elif winnerIndex != -1 and winnerIndex != playerIndex:
-                self.setDisplayText(f"You Lose!")
+                label = QLabel(text="You Lose!")
+                label.setAlignment(Qt.AlignCenter)
+                self.generalLayout.addWidget(label)
         elif action == Action.HOLD:
             button.setBorder(playerId)
         elif action == Action.RELEASE:

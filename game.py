@@ -78,7 +78,7 @@ class Game:
                 self.broadcast(f"{Action.HOLD} {row} {col} {player.id}")
             elif action == Action.CLAIM and box.canBeClaim(player):
                 winner_index = self.checkWinners()
-                self.broadcast(f"{Action.CLAIM} {row} {col} {player.id} {-1}")
+                self.broadcast(f"{Action.CLAIM} {row} {col} {player.id} {winner_index}")
                 if winner_index != -1: 
                     self.isGameFinished = True
             elif action == Action.RELEASE and box.canBeReleased(player):
