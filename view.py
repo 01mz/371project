@@ -131,12 +131,12 @@ class GUI(QMainWindow):
         if remaining > 0:
             self.player.socket.send(f"{Action.RELEASE} {row} {col}".encode("ascii"))
 
-    def handleAction(self, action: str, row: int, col: int, playerId: int, winnerIndex: int, playerIndex: int):
+    def handleAction(self, action: str, row: int, col: int, playerId: int, winnerIndex: int):
         button = self.buttonGrid[row][col]
         if action == Action.CLAIM:
             button.setBorder(-1)
             button.setBackground(playerId)
-            if winnerIndex != -1 and winnerIndex == playerIndex:
+            if winnerIndex != -1:
                 label = QLabel(text=f"Game ended: {getColor(winnerIndex)} wins")
                 label.setAlignment(Qt.AlignCenter)
                 self.generalLayout.addWidget(label)
@@ -150,7 +150,7 @@ class GUI(QMainWindow):
 # A thread for listening the incoming command from the server
 # and emitting events to the main thread to update the UI
 class UIThread(QThread):
-    signaler = pyqtSignal(str, int, int, int, int, int)
+    signaler = pyqtSignal(str, int, int, int, int)
 
     def __init__(self, client: socket):
         super().__init__()
@@ -165,11 +165,11 @@ class UIThread(QThread):
                 if len(tokens) == 4:
                     action, *rest = tokens
                     row, col, playerId = [int(v) for v in rest]
-                    self.signaler.emit(action, row, col, playerId, -1, 0)
-                elif len(tokens) == 6:
+                    self.signaler.emit(action, row, col, playerId, -1)
+                elif len(tokens) == 5:
                     action, *rest = tokens
-                    row, col, playerId, winnerIndex, playerIndex = [int(v) for v in rest]
-                    self.signaler.emit(action, row, col, playerId, winnerIndex, playerIndex)
+                    row, col, playerId, winnerIndex = [int(v) for v in rest]
+                    self.signaler.emit(action, row, col, playerId, winnerIndex)
                 else:       
                     print("Invalid command", command)
                     continue

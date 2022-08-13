@@ -87,12 +87,7 @@ class Game:
     # Broadcast a command to all players
     def broadcast(self, message: str):      
         for player in self.players:
-            action, *_ = message.split(" ")
-            new_message = message + f" {player.id}"
-            if action == Action.CLAIM:
-                player.socket.send(new_message.encode("ascii"))
-            else:
-                player.socket.send(message.encode("ascii"))
+            player.socket.send(message.encode("ascii"))
 
     def checkWinners(self):
         claimed_list = []         #Get claimed boxes array
