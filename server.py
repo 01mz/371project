@@ -1,29 +1,27 @@
 import socket
 from concurrent.futures import ThreadPoolExecutor
 
-from constant import SERVER_HOST, SERVER_PORT
+from constant import MAX_PLAYERS, SERVER_HOST, SERVER_PORT, Connection
 from game import Game, Player
 
-game = Game()
-
 # Listen and handle the incoming commands from the player
-def handlePlayer(player: Player):
+def handlePlayer(game: Game, player: Player):
     while True:
-        client, _ = player
         try:
             # Handle game command from the client
-            command = client.recv(1024).decode("ascii")
+            command = player.socket.recv(1024).decode("ascii")
             action, row, col = command.split(" ")
             game.handleAction(player, action, int(row), int(col))
         except:
             # Removing player from the game
             game.removePlayer(player)
-            client.close()
-            print(f"Player {player[1]} is disconnected")
+            player.socket.close()
+            print(f"Player {player.id} is disconnected")
             break
 
-
 def main():
+    # Create a new game
+    game = Game()
     # Set up the server
     server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     server.bind((SERVER_HOST, SERVER_PORT))
@@ -31,18 +29,31 @@ def main():
     print(f"Server is running on port {SERVER_PORT}")
 
     with ThreadPoolExecutor() as executor:
-        while game.isPlaying():
+        while True:
             # Connect the client
             client, _ = server.accept()
 
-            # Add new player to the game
-            player = game.addPlayer(client)
-            print(f"Player {player[1]} is connected")
+            # If all players have disconnected and then a new player joins, reset the game for the new player
+            if len(game.players) == 0 and game.isPlaying:
+                print("creating a new game")
+                game = Game()
 
-            # Create a thread to handle incoming commands for each player
-            # and add it to the thread pool
-            executor.submit(handlePlayer, player)
-        server.close()
+            # Reject player if the game is full of players or the game is playing
+            if len(game.players) >= MAX_PLAYERS or game.isPlaying:
+                client.send(Connection.REJECT.encode("ascii"))
+                client.close()
+                continue
+
+            # Notify the player which ID they are playing
+            else:
+                # Add new player to the game
+                player = game.addPlayer(client)
+                client.send(f"{Connection.ACCEPT} {player.id}".encode("ascii"))
+                
+                # Create a thread to handle incoming commands for each player
+                # and add it to the thread pool
+                executor.submit(handlePlayer, game, player)
+                print(f"Player {player.id} is connected")
 
 
 if __name__ == "__main__":

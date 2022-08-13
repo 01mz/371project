@@ -13,6 +13,3 @@ Install pyqt5 for the GUI library
 
 ## Run a client with specific server host
 `python client.py 127.0.0.1`
-
-### To test the GUI without running the client and server run
-`python view.py`
