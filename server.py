@@ -9,9 +9,10 @@ def handlePlayer(game: Game, player: Player):
     while True:
         try:
             # Handle game command from the client
-            command = player.socket.recv(1024).decode("ascii")
-            action, row, col = command.split(" ")
-            game.handleAction(player, action, int(row), int(col))
+            commands = player.socket.recv(1024).decode("ascii").strip('|').split('|')
+            for command in commands:
+                action, row, col = command.split(" ")
+                game.handleAction(player, action, int(row), int(col))
         except:
             # Removing player from the game
             game.removePlayer(player)

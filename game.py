@@ -85,6 +85,7 @@ class Game:
 
     # Broadcast a command to all players
     def broadcast(self, message: str):
+        message += '|'
         for player in self.players:
             player.socket.send(message.encode("ascii"))
 
