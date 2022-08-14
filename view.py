@@ -13,7 +13,7 @@ from PyQt5.QtWidgets import (
     QWidget,
 )
 
-from constant import BOARD_SIZE, Action, getColor, getLabel
+from constant import BOARD_SIZE, TIME_TO_HOLD, Action, getColor, getLabel
 from game import Player
 
 # Global style for all buttons
@@ -123,7 +123,7 @@ class GUI(QMainWindow):
             self.player.socket.send(f"{Action.CLAIM} {row} {col}".encode("ascii"))
 
         self.timer.timeout.connect(callback)
-        self.timer.start(3000)
+        self.timer.start(TIME_TO_HOLD)
 
     def onButtonReleased(self, _: QPushButton, row: int, col: int):
         remaining = self.timer.remainingTime()
@@ -131,26 +131,30 @@ class GUI(QMainWindow):
         if remaining > 0:
             self.player.socket.send(f"{Action.RELEASE} {row} {col}".encode("ascii"))
 
-    def handleAction(self, action: str, row: int, col: int, playerId: int, winnerIndex: int):
+    def handleAction(self, action: str, row: int, col: int, playerId: int):
         button = self.buttonGrid[row][col]
         if action == Action.CLAIM:
             button.setBorder(-1)
             button.setBackground(playerId)
-            if winnerIndex != -1:
-                label = QLabel(text=f"Game ended: {getColor(winnerIndex)} wins")
-                label.setAlignment(Qt.AlignCenter)
-                self.generalLayout.addWidget(label)
         elif action == Action.HOLD:
             button.setBorder(playerId)
         elif action == Action.RELEASE:
             button.setBorder(-1)
+        elif action == Action.WIN:
+            if playerId != -1:
+                text = f"Game ended: {getColor(playerId)} wins"
+            else:
+                text = "Game ended: it's a tie"
+            label = QLabel(text=text)
+            label.setAlignment(Qt.AlignCenter)
+            self.generalLayout.addWidget(label)
         button.applyStyle()
 
 
 # A thread for listening the incoming command from the server
 # and emitting events to the main thread to update the UI
 class UIThread(QThread):
-    signaler = pyqtSignal(str, int, int, int, int)
+    signaler = pyqtSignal(str, int, int, int)
 
     def __init__(self, client: socket):
         super().__init__()
@@ -165,11 +169,11 @@ class UIThread(QThread):
                 if len(tokens) == 4:
                     action, *rest = tokens
                     row, col, playerId = [int(v) for v in rest]
-                    self.signaler.emit(action, row, col, playerId, -1)
-                elif len(tokens) == 5:
+                    self.signaler.emit(action, row, col, playerId)
+                elif len(tokens) == 2: # handle action "win playerId"
                     action, *rest = tokens
-                    row, col, playerId, winnerIndex = [int(v) for v in rest]
-                    self.signaler.emit(action, row, col, playerId, winnerIndex)
+                    playerId = [int(v) for v in rest][0]
+                    self.signaler.emit(action, 0, 0, playerId)
                 else:       
                     print("Invalid command", command)
                     continue
