@@ -112,7 +112,7 @@ class GUI(QMainWindow):
         self.generalLayout.addLayout(buttonsLayout)
 
     def onButtonPressed(self, _: QPushButton, row: int, col: int):
-        command = f"{Action.HOLD} {row} {col}"
+        command = f"{Action.HOLD} {row} {col}|"
         self.player.socket.send(command.encode("ascii"))
 
         # Start the timer
@@ -120,7 +120,7 @@ class GUI(QMainWindow):
         self.timer.setSingleShot(True)
 
         def callback():
-            self.player.socket.send(f"{Action.CLAIM} {row} {col}".encode("ascii"))
+            self.player.socket.send(f"{Action.CLAIM} {row} {col}|".encode("ascii"))
 
         self.timer.timeout.connect(callback)
         self.timer.start(TIME_TO_HOLD)
@@ -129,7 +129,7 @@ class GUI(QMainWindow):
         remaining = self.timer.remainingTime()
         self.timer.stop()
         if remaining > 0:
-            self.player.socket.send(f"{Action.RELEASE} {row} {col}".encode("ascii"))
+            self.player.socket.send(f"{Action.RELEASE} {row} {col}|".encode("ascii"))
 
     def handleAction(self, action: str, row: int, col: int, playerId: int):
         button = self.buttonGrid[row][col]
@@ -163,20 +163,21 @@ class UIThread(QThread):
     def run(self):
         while True:
             try:
-                command = self.client.recv(1024).decode("ascii")
-                print(command)
-                tokens = command.split(" ")
-                if len(tokens) == 4:
-                    action, *rest = tokens
-                    row, col, playerId = [int(v) for v in rest]
-                    self.signaler.emit(action, row, col, playerId)
-                elif len(tokens) == 2: # handle action "win playerId"
-                    action, *rest = tokens
-                    playerId = [int(v) for v in rest][0]
-                    self.signaler.emit(action, 0, 0, playerId)
-                else:       
-                    print("Invalid command", command)
-                    continue
+                commands = self.client.recv(1024).decode("ascii").strip('|').split('|')
+                for command in commands:
+                    print(command)
+                    tokens = command.split(" ")
+                    if len(tokens) == 4:
+                        action, *rest = tokens
+                        row, col, playerId = [int(v) for v in rest]
+                        self.signaler.emit(action, row, col, playerId)
+                    elif len(tokens) == 2: # handle action "win playerId"
+                        action, *rest = tokens
+                        playerId = [int(v) for v in rest][0]
+                        self.signaler.emit(action, 0, 0, playerId)
+                    else:       
+                        print("Invalid command", command)
+                        continue
                 
             except Exception as e:
                 print(f"Error!: {e}")
