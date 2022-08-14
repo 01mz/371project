@@ -1,18 +1,20 @@
 SERVER_HOST = ''
 SERVER_PORT = 65432
 BOARD_SIZE = 8
+TIME_TO_HOLD = 3000
 
 # Game actions used by both server and client
 class Action:
     RELEASE = "release"
     HOLD = "hold"
     CLAIM = "claim"
+    WIN = "win"
 
 # Connection operations sent by the server
 class Connection:
     ACCEPT = "accept"
     REJECT = "reject"
-    WIN = "win"
+
 
 COLORS = ["red", "green", "blue", "yellow"]
 LABELS = ["RED", "GREEN", "BLUE", "YELLOW"]

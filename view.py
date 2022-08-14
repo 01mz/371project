@@ -13,7 +13,7 @@ from PyQt5.QtWidgets import (
     QWidget,
 )
 
-from constant import BOARD_SIZE, Action, getColor, getLabel
+from constant import BOARD_SIZE, TIME_TO_HOLD, Action, getColor, getLabel
 from game import Player
 
 # Global style for all buttons
@@ -123,7 +123,7 @@ class GUI(QMainWindow):
             self.player.socket.send(f"{Action.CLAIM} {row} {col}".encode("ascii"))
 
         self.timer.timeout.connect(callback)
-        self.timer.start(3000)
+        self.timer.start(TIME_TO_HOLD)
 
     def onButtonReleased(self, _: QPushButton, row: int, col: int):
         remaining = self.timer.remainingTime()
@@ -140,6 +140,14 @@ class GUI(QMainWindow):
             button.setBorder(playerId)
         elif action == Action.RELEASE:
             button.setBorder(-1)
+        elif action == Action.WIN:
+            if playerId != -1:
+                text = f"Game ended: {getColor(playerId)} wins"
+            else:
+                text = "Game ended: it's a tie"
+            label = QLabel(text=text)
+            label.setAlignment(Qt.AlignCenter)
+            self.generalLayout.addWidget(label)
         button.applyStyle()
 
 
@@ -158,12 +166,18 @@ class UIThread(QThread):
                 command = self.client.recv(1024).decode("ascii")
                 print(command)
                 tokens = command.split(" ")
-                if len(tokens) != 4:
-                    print("Invalid command")
+                if len(tokens) == 4:
+                    action, *rest = tokens
+                    row, col, playerId = [int(v) for v in rest]
+                    self.signaler.emit(action, row, col, playerId)
+                elif len(tokens) == 2: # handle action "win playerId"
+                    action, *rest = tokens
+                    playerId = [int(v) for v in rest][0]
+                    self.signaler.emit(action, 0, 0, playerId)
+                else:       
+                    print("Invalid command", command)
                     continue
-                action, *rest = tokens
-                row, col, playerId = [int(v) for v in rest]
-                self.signaler.emit(action, row, col, playerId)
+                
             except Exception as e:
                 print(f"Error!: {e}")
                 self.client.close()

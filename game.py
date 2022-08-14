@@ -3,6 +3,8 @@ from threading import Lock
 from typing import List, Optional
 
 from constant import BOARD_SIZE, MAX_PLAYERS, MIN_PLAYERS, Action
+from collections import Counter
+
 
 class Player:
     def __init__(self, socket: socket, id: int):
@@ -42,6 +44,7 @@ class Game:
         self.players: List[Player] = []
         self.lock = Lock()
         self.isPlaying = False
+        self.isGameFinished = False
         self._makeBoxes()
 
     def _makeBoxes(self):
@@ -67,7 +70,7 @@ class Game:
     def handleAction(self, player: Player, action: str, row: int, col: int):
         with self.lock:
             # Reject the action if there are not enough players
-            if len(self.players) < MIN_PLAYERS or len(self.players) >= MAX_PLAYERS:
+            if len(self.players) < MIN_PLAYERS or len(self.players) > MAX_PLAYERS or self.isGameFinished is True:
                 return
             self.isPlaying = True
             box = self.boxes[row][col]
@@ -75,6 +78,8 @@ class Game:
                 self.broadcast(f"{Action.HOLD} {row} {col} {player.id}")
             elif action == Action.CLAIM and box.canBeClaim(player):
                 self.broadcast(f"{Action.CLAIM} {row} {col} {player.id}")
+                if self.checkWinners():
+                    self.isGameFinished = True
             elif action == Action.RELEASE and box.canBeReleased(player):
                 self.broadcast(f"{Action.RELEASE} {row} {col} {player.id}")
 
@@ -82,3 +87,40 @@ class Game:
     def broadcast(self, message: str):
         for player in self.players:
             player.socket.send(message.encode("ascii"))
+
+    def checkWinners(self):
+        claimed_list = []         #Get claimed boxes array
+        for row in range(BOARD_SIZE):
+            for col in range(BOARD_SIZE):
+                if(self.boxes[row][col].claim is not None):
+                    claimed_list.append(self.boxes[row][col].claim.id)
+
+        #Get the most repetitive number of claimed boxes
+        c = Counter(claimed_list)
+
+        win_threshold = int((BOARD_SIZE*BOARD_SIZE)/2)
+
+        # returns (playerId, score) ordered by most boxes claimed: [(player index, # of boxes claim)]
+        highest_scores = c.most_common()
+        first = highest_scores[0]
+        first_id, first_score = first
+
+        # If a player claimed more than 1/n of the total boxes, they win
+        if first_score >= win_threshold+1:
+            print("Winner is player number", first_id, "with highest score:", first_score)
+            self.broadcast(f"{Action.WIN} {first_id}")
+            return True
+
+        if len(claimed_list) == BOARD_SIZE*BOARD_SIZE:
+            # If every box is filled and the top two players have the same score, then there is a tie
+            second_score = 0 if len(highest_scores) == 1 else highest_scores[1][1]
+            if first_score == second_score:
+                print("Game ended as a tie with score:", first_score)
+                player_id = -1
+                self.broadcast(f"{Action.WIN} {player_id}")
+            else:
+                print("Winner is player number", first_id, "with highest score:", first_score)
+                self.broadcast(f"{Action.WIN} {first_id}")
+            return True
+
+        return False
