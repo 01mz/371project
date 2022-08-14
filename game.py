@@ -98,7 +98,7 @@ class Game:
         #Get the most repetitive number of claimed boxes
         c = Counter(claimed_list)
 
-        win_threshold = int((BOARD_SIZE*BOARD_SIZE)/len(self.players))
+        win_threshold = int((BOARD_SIZE*BOARD_SIZE)/2)
 
         # returns (playerId, score) ordered by most boxes claimed: [(player index, # of boxes claim)]
         highest_scores = c.most_common()
